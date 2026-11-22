@@ -1,0 +1,13 @@
+SMART SOCIETY SECURITY SYSTEM - EVALUATION REPORT
+============================================================
+Total Test Samples  : 176
+Matching Threshold  : 0.5
+True Positives (TP) : 88
+True Negatives (TN) : 88
+False Positives(FP) : 0
+False Negatives(FN) : 0
+Accuracy            : 100.00%
+Precision           : 100.00%
+Recall              : 100.00%
+F1-Score            : 100.00%
+============================================================

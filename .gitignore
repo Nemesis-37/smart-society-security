@@ -1,0 +1,20 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment
+venv/
+.venv/
+env/
+.env
+
+# VS Code & IDEs
+.vscode/
+.idea/
+
+# SQLite databases & runtime data
+*.db-journal
+
+# Output test artifacts / logs
+*.log
