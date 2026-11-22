@@ -1,196 +1,260 @@
-# Academic Project Report
+# Smart Society Security System – Project Report
 
-# Smart Society Security System: Real-Time Face Recognition Access Control
-
-**Course:** B.Tech / B.E. / B.Sc. Computer Science & Engineering  
-**Subject:** Computer Vision & Digital Image Processing  
-**Project Category:** Academic Prototype / Real-Time Biometric Access Control  
-**Platform:** Python 3.13, OpenCV 5.1.0, SQLite3, Windows 11  
-
----
-
-## Abstract
-
-Biometric access control systems have become fundamental components of modern residential society security infrastructure. Traditional keycard or manual ledger systems suffer from physical theft, credential sharing, and operational friction. This project presents the design, implementation, and rigorous empirical evaluation of a **Smart Society Security System** utilizing computer vision and digital image processing techniques. 
-
-Operating on a standard laptop webcam, the system performs real-time face detection via Haar Feature-based Cascades, normalizes illumination using Contrast-Limited Adaptive Histogram Equalization (CLAHE), extracts a 128-dimensional spatial gradient feature vector (Face Encoding), and performs nearest-neighbor distance matching against a local SQLite database storing registered residents. 
-
-If a detected individual's Euclidean face distance falls within an adjustable matching threshold ($\tau \le 0.50$), the gate interface grants access with **`ENTRY ALLOWED`** displayed in green along with the resident's name, ID, and confidence score. If the person is unrecognized, the system displays **`ENTRY REJECTED`** in red and tags the individual as `Unknown Person`. The system has been validated on 22 registered residents and an independent evaluation dataset of 176 test samples under diverse environmental conditions (low illumination, angled poses, and image noise), achieving high accuracy, zero database corruption, and real-time processing performance exceeding 30 FPS.
+**Course:** Computer Vision  
+**Submission Date:** November 2026  
+**Technology:** Python 3.13 · OpenCV · SQLite · Matplotlib  
 
 ---
 
 ## 1. Introduction
 
-Automated facial recognition provides a contactless, secure, and user-friendly biometric modality for monitoring entrances to gated communities and corporate facilities. In a residential society security scenario, the primary objectives are twofold:
-1. Facilitate frictionless access for authorized residents.
-2. Intercept and flag unregistered visitors or potential intruders.
+The Smart Society Security System is a real-time face-recognition access-control system developed as a college Computer Vision project. It addresses the problem of manual visitor verification in gated residential communities by automating entry decisions using laptop webcam video and stored resident face encodings.
 
-This project delivers a complete academic implementation of an automated security gate system built entirely on native Python and OpenCV, avoiding heavy proprietary frameworks or unsupported C++ dependencies.
+The system grants **ENTRY ALLOWED** (displayed in green) to registered residents and **ENTRY REJECTED** (displayed in red) to unrecognised persons, with the resident name displayed when recognised.
 
-```mermaid
-flowchart LR
-    A["Live Webcam Feed"] --> B["OpenCV Haar Cascade Face Detector"]
-    B --> C["Face ROI Extraction & CLAHE Normalization"]
-    C --> D["128-D Spatial Gradient Feature Vector"]
-    D --> E["Euclidean Distance Comparison"]
-    F[("SQLite Database<br/>Registered Residents")] --> E
-    E --> G{"Distance <= Threshold?"}
-    G -- "Yes" --> H["ENTRY ALLOWED (Green)<br/>Resident Name & Confidence"]
-    G -- "No" --> I["ENTRY REJECTED (Red)<br/>Unknown Person"]
+---
+
+## 2. Problem Statement
+
+Traditional security in gated societies relies on manual log books, printed ID cards, and security guard judgment. This approach is error-prone, slow, and unscalable. A computer-vision-based face-recognition system can automate identity verification in real time.
+
+**Goal:** Build a lightweight, Python-based face recognition security gate that:
+- Runs on commodity hardware (a laptop with built-in webcam).
+- Requires no specialised deep learning accelerators.
+- Stores resident data securely in a local database.
+- Provides real-time decisions with sub-second latency.
+
+---
+
+## 3. System Architecture
+
+```
+Input (Webcam / Image)
+        │
+        ▼
+Haar Cascade Face Detection (OpenCV)
+        │
+        ▼
+Face ROI Extraction (8% margin crop)
+        │
+        ▼
+Preprocessing: Grayscale → Resize 100×100 → CLAHE
+        │
+        ▼
+Sobel Gradient Computation (Gx, Gy → Magnitude, Angle)
+        │
+        ▼
+Spatial Grid HOG (4×4 cells × 8 bins = 128-D vector)
+        │
+        ▼
+L2 Normalization (local block + global)
+        │
+        ▼
+Euclidean Distance Comparison (vs. SQLite database)
+        │
+        ├── distance ≤ 0.50 → ENTRY ALLOWED
+        └── distance >  0.50 → ENTRY REJECTED
 ```
 
 ---
 
-## 2. Technology Stack & Compatibility Analysis
+## 4. Technology Stack
 
-### 2.1 Selected Technologies
-* **Programming Language:** Python 3.13.7 (64-bit AMD64)
-* **Computer Vision Library:** OpenCV (`opencv-contrib-python` v5.1.0.95)
-* **Scientific Computing:** NumPy (v2.4.4)
-* **Database Management:** SQLite3 (Python Standard Library)
-* **Statistical Evaluation:** Scikit-Learn (v1.9.1) & Pandas (v3.0.2)
-* **Data Visualization:** Matplotlib (v3.11.2)
-* **Image Processing Utility:** Pillow (v11.2.1)
-
-### 2.2 Compatibility Assessment: `dlib` vs. Native OpenCV Architecture
-The assignment prompt specified investigating the compatibility of `face_recognition` and `dlib` with the installed environment:
-* **The `dlib` Issue:** On Windows 11 running **Python 3.13**, PyPI does not host pre-compiled binary wheels for `dlib`. Building `dlib` from source requires Visual Studio C++ 2019/2022 Build Tools, CMake, and encounters C++ ABI header changes introduced in Python 3.13.
-* **The Non-Destructive Solution:** Instead of forcing experimental compilers or destabilizing the Python environment, the system utilizes **OpenCV's native image processing and spatial gradient descriptors**.
-* **Equivalence:** The resulting 128-dimensional normalized feature vector preserves the exact mathematical interface:
-  $$\mathbf{e} \in \mathbb{R}^{128}, \quad \|\mathbf{e}\|_2 = 1$$
-  Distance is computed via standard Euclidean norm $d = \|\mathbf{e}_1 - \mathbf{e}_2\|_2$, with identical thresholding logic and 100% offline reproducibility.
+| Component | Technology | Justification |
+|-----------|------------|---------------|
+| Programming Language | Python 3.13 | Modern, widely supported |
+| Face Detection | OpenCV Haar Cascade | Pre-trained, fast, no GPU needed |
+| Face Encoding | Custom HOG (Sobel + 4×4 grid + 8 bins) | Python 3.13 compatible; no dlib required |
+| Database | SQLite 3 | Embedded, zero-configuration, standard library |
+| Image Processing | NumPy, OpenCV | Efficient array operations |
+| Evaluation | Scikit-learn, Matplotlib | Standard ML evaluation pipeline |
 
 ---
 
-## 3. Mathematical & Algorithmic Foundations
+## 5. Face Encoding Algorithm
 
-### 3.1 Face Detection: Haar Feature-Based Cascade Classifier
-Faces are detected in live frames using Viola-Jones Haar Cascade filters (`haarcascade_frontalface_default.xml`).
-1. **Integral Image Representation:** Rapidly sums pixel intensities over rectangular sub-windows in $O(1)$ constant time.
-2. **Haar-like Features:** Computes contrast differences between adjacent rectangular regions (e.g., eye sockets are darker than the nose bridge and forehead).
-3. **Adaboost & Cascade Architecture:** Discards non-face background windows in early cascade stages, focusing computation on candidate face regions.
+### Why not use `dlib` / `face_recognition`?
+The popular `dlib` library provides a 128-D ResNet-based face descriptor with high accuracy. However, its prebuilt Python wheels are not available for Python 3.13 on Windows (as of November 2026). Building from source requires CMake, Visual C++ Build Tools, and a compatible Boost version — infeasible in a constrained lab environment.
 
-### 3.2 Canonical Alignment & Illumination Normalization (CLAHE)
-Face crops are resized to a canonical size of $100 \times 100$ pixels. To eliminate shadows, uneven hallway lighting, and overexposure, **Contrast-Limited Adaptive Histogram Equalization (CLAHE)** is applied:
-* Divides the image into an $8 \times 8$ grid of contextual tiles.
-* Equalizes local histograms while clipping contrast amplification at $2.0$ to prevent noise over-amplification.
+### Custom 128-D HOG Encoding
 
-### 3.3 128-Dimensional Spatial Gradient Encoding Pipeline
-To represent facial identity independently of pixel intensity:
-1. **Spatial Gradient Computation:** Horizontal ($G_x$) and vertical ($G_y$) gradients are calculated using $3 \times 3$ Sobel kernels:
-   $$G_x = \frac{\partial I}{\partial x}, \quad G_y = \frac{\partial I}{\partial y}$$
-   $$M(x, y) = \sqrt{G_x^2 + G_y^2}, \quad \theta(x, y) = \arctan\left(\frac{G_y}{G_x}\right) \pmod{360^\circ}$$
-2. **Spatial Grid Partitioning:** The face is partitioned into a $4 \times 4$ spatial grid (16 anatomical regions covering forehead, eye sockets, nose bridge, cheeks, and mouth).
-3. **Orientation Histogramming:** In each $25 \times 25$ pixel cell, an 8-bin orientation histogram (each covering $45^\circ$) is accumulated weighted by gradient magnitude:
-   $$16 \text{ cells} \times 8 \text{ orientation bins} = 128 \text{ features}$$
-4. **Block Normalization & Global $L_2$ Normalization:**
-   $$\mathbf{e} = \frac{\mathbf{v}}{\|\mathbf{v}\|_2 + \epsilon}$$
-   Mapping each face to a unit vector on the 128-dimensional hypersphere ensures that identity comparison is invariant to absolute image brightness.
+**Step 1 – Canonical Resizing:**  
+Face ROI is resized to 100 × 100 pixels using bilinear interpolation.
 
-### 3.4 Distance Metric & Security Decision Rule
-Given a candidate encoding $\mathbf{e}_c$ and registered encodings $\{\mathbf{e}_i\}_{i=1}^N$:
-1. Compute Euclidean distance to all residents:
-   $$d_i = \|\mathbf{e}_c - \mathbf{e}_i\|_2 = \sqrt{\sum_{k=1}^{128} (e_{c,k} - e_{i,k})^2}$$
-2. Find the closest resident:
-   $$d^* = \min_{i} d_i, \quad i^* = \arg\min_i d_i$$
-3. Security Decision Function:
-   $$\text{Decision}(d^*) = \begin{cases} 
-   \textbf{ENTRY ALLOWED} & \text{if } d^* \le \tau \\ 
-   \textbf{ENTRY REJECTED} & \text{if } d^* > \tau 
-   \end{cases}$$
-   where $\tau$ is the adjustable threshold (default $\tau = 0.50$).
+**Step 2 – CLAHE Normalisation:**  
+Contrast Limited Adaptive Histogram Equalisation (clipLimit=2.0, tileGridSize=8×8) normalises illumination across the face.
+
+**Step 3 – Sobel Gradient:**
+$$G_x = \text{Sobel}(I, x),\quad G_y = \text{Sobel}(I, y)$$
+$$\text{Magnitude} = \sqrt{G_x^2 + G_y^2},\quad \theta = \arctan\!\left(\frac{G_y}{G_x}\right)$$
+
+**Step 4 – Spatial Gradient Histogram:**  
+The 100 × 100 image is divided into a 4 × 4 grid of 25 × 25-pixel cells. For each cell, edge magnitudes are accumulated into 8 orientation bins (45° each), yielding a 128-dimensional feature vector.
+
+**Step 5 – Normalisation:**  
+Each 8-D cell histogram is locally L2-normalised, then the full 128-D vector is globally L2-normalised to lie on the unit hypersphere. This makes the encoding robust to overall brightness scale.
 
 ---
 
-## 4. System Implementation & Modular Architecture
+## 6. Face Detection
 
-### 4.1 SQLite Relational Schema
-The database is structured in `data/society_security.db`:
-```sql
-CREATE TABLE IF NOT EXISTS residents (
-    resident_id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    face_encoding BLOB NOT NULL,
-    registration_date TEXT NOT NULL
-);
+Haar Cascade classifiers (`haarcascade_frontalface_default.xml`, shipped with OpenCV) are used for face localisation. Parameters:
+
+| Parameter | Value | Effect |
+|-----------|-------|--------|
+| scaleFactor | 1.1 | Multi-scale detection step |
+| minNeighbors | 5 | False-positive suppression |
+| minSize | (40, 40) | Minimum detectable face |
+
+---
+
+## 7. Database Design
+
+SQLite database: `database/society_security.db`
+
+**Table: `residents`**
+
+| Column | Type | Constraint | Description |
+|--------|------|-----------|-------------|
+| resident_id | TEXT | PRIMARY KEY | Unique ID (R001–R022) |
+| name | TEXT | NOT NULL | Full resident name |
+| face_encoding | BLOB | NOT NULL | 128 × float32 = 512 bytes |
+| registration_date | TEXT | NOT NULL | ISO 8601 timestamp |
+
+Face encodings are serialised via `numpy.ndarray.tobytes()` and deserialised with `numpy.frombuffer()`, ensuring lossless round-trip storage.
+
+---
+
+## 8. Recognition Logic
+
+For each detected webcam face:
+1. Generate 128-D encoding from live ROI.
+2. Compute Euclidean distance to every stored resident encoding.
+3. Find the minimum distance `d_min`.
+4. If `d_min ≤ threshold (0.50)`: ENTRY ALLOWED → display resident name.
+5. Else: ENTRY REJECTED → display "Unknown Person".
+
+**Threshold Justification:**  
+Euclidean distance between the same person's same photo = ~0.06 (rounding from normalisation noise). Distance to a random encoding = ~0.67. A threshold of 0.50 provides a clear separation in controlled conditions.
+
+---
+
+## 9. Resident Registration
+
+Registration supports two modes:
+1. **Webcam capture** – live frame is captured, validated (single face required), encoded and stored.
+2. **File upload** – existing JPEG/PNG is validated and encoded.
+
+Validation rules:
+- Exactly one face must be detected (multi-face and no-face photos are rejected).
+- Duplicate resident IDs are rejected.
+- Minimum image resolution: 50 × 50 px.
+
+---
+
+## 10. Phase Summary
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 1 | Environment setup | ✅ Complete |
+| 2 | SQLite database layer | ✅ Complete |
+| 3 | Resident registration | ✅ Complete |
+| 4 | Live webcam face detection | ✅ Complete |
+| 5 | Face recognition engine | ✅ Complete |
+| 6 | Security gate interface | ✅ Complete |
+| 7 | Performance evaluation | ✅ Complete |
+| 8 | Final review & documentation | ✅ Complete |
+
+---
+
+## 11. Evaluation Results
+
+### Test Dataset Construction
+
+| Category | Count | Method |
+|----------|-------|--------|
+| Genuine – Standard (2° warp) | 22 | Photo augmentation |
+| Genuine – Low Light (alpha 0.75, beta -20) | 22 | Photo augmentation |
+| Genuine – Angled (8° rotation) | 22 | Photo augmentation |
+| Genuine – Blurred (Gaussian 5×5) | 22 | Photo augmentation |
+| Intruder – Synthetic random encodings | 88 | Random L2-normalised 128-D vectors |
+| **Total** | **176** | |
+
+### Performance Metrics (Threshold = 0.50)
+
+| Metric | Value |
+|--------|-------|
+| True Positive (TP) | 88 |
+| True Negative (TN) | 88 |
+| False Positive (FP) | 0 |
+| False Negative (FN) | 0 |
+| Accuracy | 100.00% |
+| Precision | 100.00% |
+| Recall | 100.00% |
+| F1-Score | 100.00% |
+
+### Confusion Matrix
+
 ```
-* **Serialization:** The 128-dimensional float32 NumPy array is serialized directly into raw IEEE-754 bytes ($128 \times 4 = 512$ bytes) using `tobytes()` and reconstituted with `np.frombuffer()`. This provides zero numerical drift and sub-millisecond retrieval speeds.
+                  Predicted
+                  Rejected  Allowed
+True  Unregistered    88       0
+      Registered       0      88
+```
 
-### 4.2 Module Decomposition
-* **`models/face_pipeline.py`:** Core vision algorithms: Haar face detection, anatomical margin crop (`extract_face_roi`), CLAHE normalization, 128-D encoding extraction, and single-face photo validation.
-* **`models/recognizer.py`:** In-memory caching, vector distance calculations, confidence scoring, adjustable thresholding, and multi-face frame parsing.
-* **`database/db_manager.py`:** Connection management, schema initialization, and transactional CRUD operations.
-* **`register_resident.py`:** Interactive CLI supporting both live webcam capture (with face alignment cues) and image file uploads.
-* **`seed_residents.py`:** Automatically registers 22 residents with diverse facial features for evaluation and academic testing.
-* **`society_security_system.py`:** Real-time OpenCV GUI with heads-up display (HUD), dynamic bounding box color switching, and interactive keyboard shortcuts (`+`, `-`, `r`, `q`).
-* **`main.py`:** Unified entry point tying the entire suite together.
+### Analysis of Perfect Scores
 
----
+The 100% metrics are explained by:
+1. **Augmentation-based genuine samples** – the same photo base is used for both registration and testing (with mild augmentations). The HOG encoding is invariant to these small changes.
+2. **Synthetic intruders** – random L2-normalised vectors produce distances of ~0.67 (well above the 0.50 threshold), making them trivially rejectable.
 
-## 5. Experimental Results & Performance Evaluation
-
-### 5.1 Evaluation Methodology
-To guarantee academic integrity, evaluation was executed on an **independent, separate evaluation dataset** not used during registration.
-
-* **Positive Test Samples ($N=88$):** 22 registered residents captured across 4 distinct test scenarios:
-  1. *Standard Frontal:* Unseen test sessions with slight scale/shift.
-  2. *Low Illumination:* Dim lighting (brightness $-20$, contrast $\times 0.75$).
-  3. *Angled Pose:* In-plane head rotation ($\pm 5^\circ$ to $7^\circ$).
-  4. *Low Quality / Blur:* Gaussian motion blur mimicking low-cost webcam artifacts.
-* **Negative Test Samples ($N=88$):** 88 distinct unregistered intruder/visitor faces completely absent from the SQLite database.
-* **Total Evaluation Size:** 176 test samples.
-
-### 5.2 Confusion Matrix
-Evaluation executed via `evaluate_system.py`:
-
-| | Predicted: Rejected (`Unknown`) | Predicted: Allowed (`Resident`) |
-| :--- | :---: | :---: |
-| **Actual: Unregistered Visitor (Negative)** | **TN = 88** | **FP = 0** |
-| **Actual: Registered Resident (Positive)** | **FN = 0** | **TP = 88** |
-
-### 5.3 Quantitative Performance Metrics
-$$\text{Accuracy} = \frac{TP + TN}{TP + TN + FP + FN} = \frac{88 + 88}{176} = \mathbf{100.00\%}$$
-
-$$\text{Precision} = \frac{TP}{TP + FP} = \frac{88}{88 + 0} = \mathbf{100.00\%}$$
-
-$$\text{Recall (Sensitivity)} = \frac{TP}{TP + FN} = \frac{88}{88 + 0} = \mathbf{100.00\%}$$
-
-$$\text{F1-Score} = 2 \times \frac{\text{Precision} \times \text{Recall}}{\text{Precision} + \text{Recall}} = \mathbf{100.00\%}$$
-
-### 5.4 Robustness Breakdown Across Environmental Conditions
-| Environmental Condition | Test Samples | Accuracy | Precision | Recall |
-| :--- | :---: | :---: | :---: | :---: |
-| **Standard Frontal** | 44 | 100.00% | 100.00% | 100.00% |
-| **Low Illumination** | 44 | 100.00% | 100.00% | 100.00% |
-| **Angled Pose ($\pm 5^\circ$)** | 44 | 100.00% | 100.00% | 100.00% |
-| **Low Quality / Blur** | 44 | 100.00% | 100.00% | 100.00% |
-
-* **Analysis:** CLAHE contrast normalization proved critical in maintaining 100% recall under low-illumination conditions, while spatial cell pooling provided spatial invariance to minor head rotations.
-* **Generated Graphs:** Saved in high-resolution PNG format at [evaluation_results/](file:///c:/Users/DELL/OneDrive/Desktop/smart society security/evaluation_results/):
-  * `confusion_matrix.png`
-  * `environmental_robustness.png`
-  * `threshold_analysis.png`
+**Real-world expectation:**  
+In a live deployment with real intruders (actual photographs of non-residents), performance would decrease, particularly for:
+- Large face angle differences (> 30°).
+- Very low lighting (< 50 lux).
+- Motion blur from fast movement.
 
 ---
 
-## 6. Real-World Limitations & Mitigations
+## 12. Environmental Robustness
 
-| Real-World Challenge | System Impact | Implemented Mitigation |
-| :--- | :--- | :--- |
-| **Extreme Lighting Extremes** | Direct sunlight or near total darkness impairs feature extraction | CLAHE equalization normalizes contrast before gradient calculation |
-| **Extreme Profile Angles ($> 30^\circ$)** | Frontal Haar Cascades cannot detect side profiles | Visual HUD prompts entrant to face the camera directly |
-| **Occlusion (Masks / Caps)** | Reduces available facial feature points | Multi-cell spatial pooling relies on remaining visible cells (eyes/forehead) |
-| **Webcam Hardware Jitter** | False rejections on momentary frame blur | Real-time threshold adjustment keys (`+` / `-`) allow instant calibration |
+| Condition | Accuracy |
+|-----------|----------|
+| Standard (2° warp) | 100% |
+| Low Light | 100% |
+| Angled (8°) | 100% |
+| Blurred (5×5 Gaussian) | 100% |
+| Synthetic Intruder | 100% |
+
+Small augmentations (< 8° rotation, mild blur, modest brightness reduction) do not affect the gradient-based HOG encoding significantly, because CLAHE pre-normalises illumination and the spatial gradient histograms are inherently orientation-binned.
 
 ---
 
-## 7. Conclusion
+## 13. Limitations and Future Work
 
-The Smart Society Security System successfully satisfies all requirements of a college-level Computer Vision project:
-1. Implements live webcam video acquisition and Haar Cascade face detection.
-2. Formulates 128-dimensional normalized face encodings compatible with Python 3.13 on Windows.
-3. Manages resident records and binary vectors in a reliable SQLite database.
-4. Correctly classifies registered residents (**`ENTRY ALLOWED`** in green) versus unknown individuals (**`ENTRY REJECTED`** in red).
-5. Provides comprehensive automated unit testing, evaluation metrics, and visualization graphs.
+**Limitations:**
+1. Only frontal faces detected (single Haar cascade).
+2. HOG encoding less discriminative than deep-learning descriptors for real-world intruders.
+3. No liveness detection (a photo can spoof the system).
+4. Synthetic intruders do not reflect real-world attack difficulty.
+5. Single sample per resident (no multi-angle registration).
 
-The modular design separates database logic, computer vision pipelines, and graphical rendering, establishing a solid foundation for future extensions such as physical relay control, anti-spoofing liveness detection, and visitor log generation.
+**Future Enhancements:**
+- Integrate `InsightFace` or ONNX-exported FaceNet for stronger embeddings.
+- Multi-angle registration (at least 3 poses per resident).
+- Liveness detection (blink or depth cues).
+- Alert logging to file/email on ENTRY REJECTED events.
+- Web dashboard for remote monitoring.
+
+---
+
+## 14. Conclusion
+
+The Smart Society Security System demonstrates a complete end-to-end Computer Vision pipeline — from raw webcam frames through face detection, encoding, database storage and real-time gate decisions. It is implemented entirely in Python using standard, open-source libraries and operates on commodity hardware without any GPU or cloud dependency.
+
+The system correctly enforces access control decisions in controlled conditions and provides a solid foundation for further improvement toward production deployment.
+
+---
+
+*Report generated: November 2026*  
+*Python 3.13.7 · OpenCV 5.1.0 · SQLite 3 · NumPy 2.4.4 · scikit-learn 1.9.1*

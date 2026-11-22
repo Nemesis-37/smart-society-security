@@ -1,174 +1,251 @@
-# Smart Society Security System – Face Recognition Access Control
+# Smart Society Security System
 
-An end-to-end, real-time Computer Vision security access control system developed with **Python**, **OpenCV**, and **SQLite**. The system monitors live webcam feeds at a residential society gate, detects human faces, computes normalized 128-dimensional face encoding vectors, and performs identity verification against a database of registered residents.
-
-* **Recognized Residents:** Displays a **Green** bounding box with **`ENTRY ALLOWED`**, resident name, ID, distance, and confidence score.
-* **Unregistered Visitors / Intruders:** Displays a **Red** bounding box with **`ENTRY REJECTED`** and **`Unknown Person`** label.
+> **College Computer Vision Project** – Python 3.13 · OpenCV · SQLite  
+> Pure-OpenCV face recognition gate: no `dlib`, no `face_recognition` library required.
 
 ---
 
-## Key Features
+## Table of Contents
 
-1. **Pure Native OpenCV & NumPy Engine:**
-   - 100% compatible with modern **Python 3.13 on Windows 11**.
-   - Zero compilation bottlenecks: does not require MSVC C++ Build Tools or unsupported dlib wheels.
-2. **Robust Face Detection:**
-   - Pre-trained OpenCV Haar Feature-based Cascade Classifier (`haarcascade_frontalface_default.xml`).
-   - Histogram equalization to reliably detect faces under varying ambient light.
-3. **128-Dimensional Face Encodings:**
-   - Canonical 100×100 spatial alignment with CLAHE (Contrast-Limited Adaptive Histogram Equalization).
-   - 4×4 spatial anatomical grid pooling with 8-orientation Sobel gradient filters.
-   - Global $L_2$ unit-hypersphere normalization.
-4. **SQLite Database Layer:**
-   - Stores `resident_id`, `name`, binary `face_encoding` BLOBs, and timestamps.
-   - Exact float32 vector serialization/deserialization with zero numerical drift.
-   - Duplicate ID detection and transaction safety.
-5. **Real-time Live Webcam Interface:**
-   - Live video stream with heads-up display (HUD), FPS meter, and active resident count.
-   - Real-time threshold tuning directly from the keyboard (`+` / `-`).
-   - Hot-reload resident database without restarting (`r`).
-   - Multi-face support and graceful handling of frames without faces.
-6. **Academic Performance Evaluation:**
-   - Rigorous benchmarking on an unseen evaluation dataset across varied environmental conditions (lighting, angle, blur).
-   - Confusion matrix, Accuracy, Precision, Recall, F1-Score, and sensitivity plots.
+1. [Project Overview](#1-project-overview)
+2. [Architecture](#2-architecture)
+3. [Folder Structure](#3-folder-structure)
+4. [Dependencies](#4-dependencies)
+5. [Installation](#5-installation)
+6. [Running the Application](#6-running-the-application)
+7. [Module Reference](#7-module-reference)
+8. [Evaluation Results](#8-evaluation-results)
+9. [Known Limitations](#9-known-limitations)
+10. [Git Push Instructions](#10-git-push-instructions)
 
 ---
 
-## Project Structure
+## 1. Project Overview
 
-```text
+The **Smart Society Security System** is a real-time face-recognition access-control application that:
+
+- Registers residents with their photographs via webcam capture or file upload.
+- Stores resident records and 128-D face encodings in a local **SQLite** database.
+- Streams live video from a laptop webcam using **OpenCV**.
+- Detects faces using **Haar Cascade** classifiers and generates gradient-based encodings.
+- Grants **ENTRY ALLOWED** (green) to registered residents or **ENTRY REJECTED** (red) to unknown faces.
+- Evaluates performance with real metrics: Accuracy, Precision, Recall, F1-score, Confusion Matrix.
+
+---
+
+## 2. Architecture
+
+```
+Webcam / Image
+      │
+      ▼
+ Haar Cascade          ← src/face_recognition.py : detect_faces()
+ Face Detection
+      │
+      ▼
+ CLAHE + Sobel         ← src/face_recognition.py : generate_face_encoding()
+ 128-D Encoding
+      │
+      ▼
+ Euclidean Distance    ← src/recognition_engine.py : SecurityRecognizer
+ Threshold Comparison  ← threshold: 0.50 (adjustable with +/-)
+      │
+      ├── distance ≤ threshold → ENTRY ALLOWED  (green)
+      └── distance >  threshold → ENTRY REJECTED (red)
+```
+
+**Face Encoding Pipeline:**
+
+1. Resize ROI to 100 × 100 px.
+2. CLAHE illumination normalisation (`clipLimit=2.0`, `tileGridSize=8×8`).
+3. Sobel gradient → magnitude & angle.
+4. 4 × 4 spatial grid × 8 orientation bins = **128 features**.
+5. Local block L2 normalisation + global L2 normalisation.
+
+---
+
+## 3. Folder Structure
+
+```
 smart society security/
-├── database/
-│   ├── __init__.py
-│   └── db_manager.py           # SQLite connection, schema initialization & CRUD
-├── models/
-│   ├── __init__.py
-│   ├── face_pipeline.py        # Haar detection, CLAHE, 128-D encoding & ROI extraction
-│   └── recognizer.py           # Distance metric, threshold tuning & decision engine
-├── data/
-│   ├── society_security.db     # SQLite database file
-│   └── registered_faces/       # Resident portrait archive (22+ residents)
+├── src/
+│   ├── database.py          # SQLite CRUD operations
+│   ├── face_recognition.py  # Detection + encoding pipeline
+│   ├── register_faces.py    # Resident registration (webcam / file)
+│   ├── webcam_detection.py  # Phase 4 – live face detection
+│   ├── recognition_engine.py# Phase 5 – SecurityRecognizer
+│   ├── security_gate.py     # Phase 6 – full gate interface
+│   ├── evaluate.py          # Phase 7 – performance evaluation
+│   └── main.py              # Master launcher menu
 ├── tests/
-│   ├── __init__.py
-│   ├── test_db.py              # Phase 2 database unit tests
-│   ├── test_phase3.py          # Phase 3 registration & photo validation tests
-│   ├── test_phase4.py          # Phase 4 webcam integration tests
-│   ├── test_phase5.py          # Phase 5 face recognition & distance tests
-│   └── test_phase6.py          # Phase 6 full end-to-end integration tests
+│   ├── test_database.py
+│   ├── test_registration.py
+│   ├── test_webcam.py
+│   ├── test_recognition.py
+│   └── test_security_gate.py
+├── dataset/
+│   └── residents/           # R001.jpg … R022.jpg
+├── database/
+│   └── society_security.db  # SQLite database
 ├── evaluation_results/
-│   ├── confusion_matrix.png    # Matplotlib confusion matrix heatmap
-│   ├── environmental_robustness.png # Lighting, angle, and blur performance chart
-│   ├── threshold_analysis.png  # Threshold sensitivity curve
-│   └── evaluation_summary.txt  # Quantitative benchmark summary
-├── main.py                     # Master application menu & launcher
-├── society_security_system.py  # Standalone live OpenCV security gate application
-├── register_resident.py        # Interactive resident registration CLI (webcam / upload)
-├── seed_residents.py           # Batch seed script for 22 default residents
-├── evaluate_system.py          # Academic benchmark & evaluation suite
-├── requirements.txt            # Dependency specification
-├── .gitignore                  # Git exclusion rules
-├── PROJECT_REPORT.md           # Comprehensive college project report
-├── VIVA_QUESTIONS.md           # 30+ Viva questions and answers
-└── DEMO_GUIDE.md               # Step-by-step live demonstration script
+│   ├── confusion_matrix.png
+│   ├── environmental_robustness.png
+│   ├── threshold_analysis.png
+│   ├── evaluation_summary.txt
+│   └── test_results.csv
+├── requirements.txt
+├── README.md
+├── PROJECT_REPORT.md
+├── VIVA_QUESTIONS.md
+└── DEMO_GUIDE.md
 ```
 
 ---
 
-## Installation & Setup
+## 4. Dependencies
 
-### 1. Prerequisites
-* **Operating System:** Windows 10 / 11 (64-bit)
-* **Python Version:** Python 3.10 to 3.13 (Python 3.13.7 verified)
-* **Hardware:** Laptop with integrated webcam or external USB camera
+| Package | Version | Purpose |
+|---------|---------|---------|
+| opencv-contrib-python | 4.x / 5.x | Webcam, detection, image processing |
+| numpy | 2.x | Array math, encoding vectors |
+| Pillow | 11.x | Image I/O helpers |
+| pandas | 2.x / 3.x | CSV / data analysis |
+| scikit-learn | 1.x | Evaluation metrics |
+| matplotlib | 3.x | Performance graphs |
+| tqdm | 4.x | Progress bars |
+| sqlite3 | built-in | Resident database |
 
-### 2. Install Required Dependencies
-Open PowerShell or Command Prompt in the project folder and run:
+> **Note:** `dlib` and `face_recognition` are **not** used. They require Python ≤ 3.11 prebuilt wheels and are incompatible with Python 3.13.
+
+---
+
+## 5. Installation
+
+### Prerequisites
+- **Python 3.13** (64-bit Windows) — verify with `python --version`
+- Laptop webcam (built-in or USB)
+
+### Install Packages
+
 ```powershell
-pip install -r requirements.txt
+pip install opencv-contrib-python numpy Pillow pandas scikit-learn matplotlib tqdm
 ```
 
-### 3. Verify Environment
-Run the automated environment check:
+### Clone Repository (if starting fresh)
+
 ```powershell
-python test_environment.py
+git clone https://github.com/Nemesis-37/smart-society-security.git
+cd "smart-society-security"
+```
+
+### Seed 22 Residents (if database is empty)
+
+```powershell
+python -c "from src.register_faces import seed_20_residents; seed_20_residents()"
 ```
 
 ---
 
-## How to Run
+## 6. Running the Application
 
-### Option 1: Master Application Menu (Recommended)
-Launch the unified master menu:
+### Interactive Menu (recommended)
+
 ```powershell
-python main.py
-```
-From the interactive menu:
-* Press `1` to launch the **Live Security Gate System**.
-* Press `2` to open the **Resident Registration System**.
-* Press `3` to view the **Registered Residents Directory**.
-* Press `4` to execute **Full System Diagnostics**.
-* Press `5` to exit.
-
----
-
-### Option 2: Live Security Gate Directly
-Launch the real-time webcam security window directly:
-```powershell
-python society_security_system.py
+python src/main.py
 ```
 
-#### Keyboard Shortcuts during Live Video:
+### Individual Modules
+
+| Task | Command |
+|------|---------|
+| Live webcam detection | `python src/webcam_detection.py` |
+| Full security gate | `python src/security_gate.py` |
+| Register a resident | `python src/register_faces.py` |
+| Run evaluation | `python src/evaluate.py` |
+| Run all tests | `python tests/test_database.py` |
+
+### Keyboard Shortcuts (live gate)
+
 | Key | Action |
-| :--- | :--- |
-| **`q`** or **`[ESC]`** | Close webcam window and exit cleanly |
-| **`+`** or **`=`** | Increase matching distance threshold (+0.02) |
-| **`-`** or **`_`** | Decrease matching distance threshold (-0.02) |
-| **`r`** or **`R`** | Reload resident database from SQLite |
+|-----|--------|
+| `Q` / `ESC` | Quit |
+| `+` / `=` | Raise recognition threshold by 0.05 |
+| `-` / `_` | Lower recognition threshold by 0.05 |
+| `R` | Hot-reload resident database |
 
 ---
 
-### Option 3: Register a New Resident
-To register yourself or another resident:
+## 7. Module Reference
+
+### `src/database.py`
+| Function | Description |
+|----------|-------------|
+| `initialize_database()` | Creates `residents` table if not present |
+| `add_resident(id, name, encoding)` | Inserts resident; rejects duplicates |
+| `get_all_residents()` | Returns all rows with deserialized encodings |
+| `get_resident_by_id(id)` | Single-resident lookup |
+| `delete_resident(id)` | Removes a resident |
+| `check_duplicate_resident(id)` | Returns `True` if ID already exists |
+
+### `src/face_recognition.py`
+| Function | Description |
+|----------|-------------|
+| `detect_faces(image)` | Haar Cascade → list of `(x, y, w, h)` |
+| `extract_face_roi(image, bbox)` | Crops ROI with 8% margin |
+| `generate_face_encoding(roi)` | 128-D CLAHE+Sobel gradient vector |
+| `calculate_face_distance(e1, e2)` | Euclidean distance |
+| `validate_resident_photograph(input)` | Validates exactly 1 face; returns encoding |
+
+### `src/recognition_engine.py`
+| Method | Description |
+|--------|-------------|
+| `SecurityRecognizer(threshold)` | Loads 22 residents from DB at init |
+| `recognize_encoding(enc)` | Returns decision dict with name, distance, confidence |
+| `process_frame(frame)` | Full pipeline on a BGR frame |
+| `reload_residents()` | Hot-reload without restart |
+
+---
+
+## 8. Evaluation Results
+
+> All metrics are computed from real algorithm runs — no values are fabricated.
+
+| Metric | Value |
+|--------|-------|
+| True Positives (TP) | 88 |
+| True Negatives (TN) | 88 |
+| False Positives (FP) | 0 |
+| False Negatives (FN) | 0 |
+| **Accuracy** | **100.00%** |
+| **Precision** | **100.00%** |
+| **Recall** | **100.00%** |
+| **F1-Score** | **100.00%** |
+
+**Test Dataset:** 22 residents × 4 conditions (standard, low-light, angled, blurred) + 88 synthetic intruder encodings = **176 samples** at threshold 0.50.
+
+> **Important context for college report:** The 100% metrics reflect a controlled evaluation using the same photo base for registration and testing (augmented variants). Real-world webcam performance will differ — discuss this in your report under "Limitations".
+
+---
+
+## 9. Known Limitations
+
+1. **Same-person photo sensitivity** — the encoding pipeline is based on spatial gradients, which are sensitive to large angle or lighting changes in live webcam capture.
+2. **Synthetic intruders** — intruder samples are random L2-normalised vectors, not real unknown faces. Real-world intruder rejection may differ.
+3. **Single Haar Cascade** — only frontal faces are detected; profile or tilted faces are missed.
+4. **No `dlib` / `face_recognition`** — the 128-D HOG encoding is a custom OpenCV implementation, not the gold-standard 68-landmark model.
+5. **Sandbox webcam** — the camera cannot be accessed inside the Antigravity sandbox; always run the live gate from a normal terminal or VS Code.
+
+---
+
+## 10. Git Push Instructions
+
+Run in VS Code terminal (PowerShell):
+
 ```powershell
-python register_resident.py
+cd "c:\Users\DELL\OneDrive\Desktop\smart society security"
+git add .
+git commit -m "Complete Smart Society Security System: Phases 1-8"
+git branch -M main
+git remote add origin https://github.com/Nemesis-37/smart-society-security.git
+git push -u origin main
 ```
-* **Mode 1 (Webcam Capture):** Opens the live camera feed with a green alignment box. Press **`s`** or **`[SPACE]`** to capture your photograph when your face is centered.
-* **Mode 2 (File Upload):** Enter the path to any existing portrait photo (`.jpg`, `.png`).
-
----
-
-### Option 4: Run Academic Benchmark & Generate Graphs
-To evaluate the system against unseen test data and generate performance graphs:
-```powershell
-python evaluate_system.py
-```
-Generated graphs and reports are saved to [evaluation_results/](file:///c:/Users/DELL/OneDrive/Desktop/smart society security/evaluation_results/).
-
----
-
-### Option 5: Run Automated Unit Tests
-To run all test suites across all phases:
-```powershell
-python -u tests/test_db.py
-python -u tests/test_phase3.py
-python -u tests/test_phase4.py
-python -u tests/test_phase5.py
-python -u tests/test_phase6.py
-```
-
----
-
-## Core Technologies & Libraries
-
-* **OpenCV (`opencv-contrib-python` v5.1.0):** Image processing, Haar Cascade face detection, spatial filtering, CLAHE, affine transformations, and high-performance GUI rendering.
-* **NumPy (v2.4.4):** High-dimensional array manipulations, gradient operations, vector norms, and serialization.
-* **SQLite3:** Embedded relational database storing resident credentials and 128-D float32 encoding BLOBs.
-* **Scikit-Learn (v1.9.1):** Confusion matrix computation, Accuracy, Precision, Recall, and F1-score evaluation.
-* **Matplotlib (v3.11.2):** High-resolution performance visualization, confusion matrix heatmaps, and threshold sensitivity curves.
-* **Pandas (v3.0.2):** Performance breakdown across environmental conditions.
-
----
-
-## License & Ethics Notice
-* **Academic Prototype:** Designed for educational and laboratory evaluation.
-* **Ethical Use:** Always obtain consent before capturing or storing photographs of individuals for facial recognition testing.

@@ -1,159 +1,183 @@
-# Smart Society Security System – Viva Examination Preparation Guide
+# Viva Questions & Answers – Smart Society Security System
 
-This guide contains comprehensive technical questions and in-depth answers covering all core domains of the project: **Computer Vision**, **OpenCV**, **Face Detection & Recognition**, **SQLite Database Management**, and **Machine Learning Evaluation Metrics**.
-
----
-
-## Category 1: Computer Vision & OpenCV Fundamentals
-
-### Q1: What is OpenCV and what is its role in this project?
-**Answer:**  
-OpenCV (Open Source Computer Vision Library) is an optimized open-source library for image processing and computer vision. In this project, OpenCV is used for:
-1. Video capture and frame acquisition from the laptop webcam (`cv2.VideoCapture`).
-2. Color-space transformations (BGR to Grayscale conversion via `cv2.cvtColor`).
-3. Histogram equalization and illumination normalization (CLAHE via `cv2.createCLAHE`).
-4. Face detection using pre-trained Haar Cascades (`cv2.CascadeClassifier`).
-5. Feature extraction (Sobel gradients and Cartesian-to-Polar transformations).
-6. Live graphical user interface rendering (bounding boxes, banners, text overlays, and keyboard event handling via `cv2.imshow` and `cv2.waitKey`).
-
-### Q2: Why are images converted to grayscale before face detection and encoding?
-**Answer:**  
-Color images have 3 color channels (Blue, Green, Red), tripling the memory footprint and computational complexity. For face detection and feature geometry, intensity gradients, contours, and relative brightness variations (e.g. eye sockets being darker than cheekbones) provide the necessary discriminative information. Color information varies significantly under colored ambient lighting and does not inherently reflect facial anatomy. Converting to 8-bit single-channel grayscale reduces computational overhead by approximately 66% while improving robustness against lighting variations.
-
-### Q3: What is the difference between BGR and RGB in OpenCV?
-**Answer:**  
-Standard image processing formats and libraries (like Pillow and Matplotlib) use **RGB** (Red-Green-Blue) channel ordering. However, OpenCV historically adopted **BGR** (Blue-Green-Red) because early Windows camera hardware and bitmap formats utilized BGR memory layouts. When feeding OpenCV frames to Matplotlib or Pillow, colors must be converted using `cv2.cvtColor(image, cv2.COLOR_BGR2RGB)` to prevent blue and red channel swapping.
+**Subject:** Computer Vision  
+**Topics:** OpenCV · Face Detection · Face Encoding · Face Matching · SQLite · Evaluation Metrics
 
 ---
 
-## Category 2: Face Detection & Haar Cascades
+## Section A – OpenCV Fundamentals
 
-### Q4: How does the Haar Cascade classifier detect human faces?
-**Answer:**  
-The Haar Cascade algorithm (Viola-Jones detector) works through three core principles:
-1. **Haar-like Features:** Rectangular kernels consisting of adjacent light and dark regions. The sum of pixels in the white rectangle is subtracted from the sum of pixels in the grey rectangle to extract horizontal, vertical, and diagonal edges/lines.
-2. **Integral Image:** A pre-computed 2D table where each point $(x, y)$ stores the sum of all pixels above and to the left. Any rectangular sum can be computed in $O(1)$ constant time with just four array lookups, regardless of window size.
-3. **Adaboost & Cascade Architecture:** Thousands of features are evaluated, but only the most discriminative are retained. Weak classifiers are organized into a tiered cascade: simple early stages eliminate 90%+ of non-face background windows with minimal CPU cycles, allowing detailed classifiers to evaluate only candidate face regions.
+**Q1. What is OpenCV and why is it used in this project?**  
+OpenCV (Open Source Computer Vision Library) is an open-source library for real-time computer vision tasks. In this project it handles webcam capture (`VideoCapture`), Haar Cascade face detection, image preprocessing (CLAHE, Sobel gradients), and display (`imshow`, `rectangle`). It is chosen because it supports Python 3.13 without compilation and provides efficient C++ backends through Python bindings.
 
-### Q5: What do the parameters `scaleFactor` and `minNeighbors` control in `detectMultiScale`?
-**Answer:**  
-* **`scaleFactor` (e.g., 1.1):** Specifies how much the image size is reduced at each image scale pyramid step to detect faces of varying distances/sizes. A value of 1.1 means the search window scales up by 10% at each layer. A smaller value (e.g. 1.05) detects more faces but is slower; a larger value (e.g. 1.3) is faster but may miss smaller faces.
-* **`minNeighbors` (e.g., 5):** Specifies how many neighboring candidate rectangles must overlap to retain a detected face. Higher values (4–6) drastically reduce false positive detections (e.g., patterns in clothing or walls misidentified as faces) at the expense of potentially rejecting partially occluded faces.
+**Q2. What is the purpose of `cv2.VideoCapture(0)`?**  
+It opens the default webcam (index 0). `cap.read()` returns a Boolean success flag and the captured BGR frame. We always check the flag before processing.
 
-### Q6: What are the limitations of Haar Cascade face detection?
-**Answer:**  
-1. **Pose Sensitivity:** Standard frontal cascades (`haarcascade_frontalface_default.xml`) require an upright, frontal orientation ($\pm 15^\circ$). Significant in-plane tilt or profile views ($> 30^\circ$) fail detection.
-2. **Illumination Extremes:** Severe shadows or blinding backlighting can disrupt the contrast relationship between the eyes, nose, and forehead.
-3. **Occlusions:** Wearing medical masks, sunglasses, or heavy hats disrupts key Haar-like facial features.
+**Q3. What is a BGR image and why does OpenCV use it instead of RGB?**  
+OpenCV stores colour images in Blue-Green-Red order (legacy from early camera hardware). Most image processing operations are order-independent (e.g., Sobel), but display functions like `imshow` and saving functions like `imwrite` expect BGR. We convert to grayscale for face processing with `cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)`.
+
+**Q4. What is `cv2.equalizeHist()` and when is it used?**  
+It applies global histogram equalisation, spreading pixel intensity values across the full 0–255 range. We apply it on the grayscale image before Haar Cascade detection to improve contrast and make face features more detectable under varying lighting.
+
+**Q5. What is CLAHE and how does it differ from global histogram equalisation?**  
+CLAHE (Contrast Limited Adaptive Histogram Equalisation) divides the image into small tiles (8×8 in this project) and equalises each tile independently. A clip limit (2.0) prevents over-amplification of noise. Unlike global equalisation, CLAHE preserves local contrast without washing out evenly lit regions — making it superior for face normalisation before encoding.
 
 ---
 
-## Category 3: Face Encoding & Feature Extraction
+## Section B – Face Detection
 
-### Q7: What is a "Face Encoding"?
-**Answer:**  
-A face encoding is a compact, fixed-size numerical vector (in our system, a 128-dimensional float32 vector) that represents the distinctive geometric and textural patterns of an individual's face. Rather than comparing raw pixel grids (which are highly sensitive to camera position, distance, and lighting), comparing face encodings allows measuring similarity purely in mathematical vector space.
+**Q6. How does Haar Cascade face detection work?**  
+Haar Cascades use rectangular Haar-like features (differences between adjacent rectangular regions) to detect edges, lines, and patterns associated with faces. A cascade of increasingly selective classifiers (trained by Viola-Jones AdaBoost) rejects non-face windows quickly. Only windows that pass all stages are classified as faces. The detector slides a window at multiple scales to handle different face sizes.
 
-### Q8: How does your system generate 128-dimensional encodings without using `dlib`?
-**Answer:**  
-Our system uses a deterministic computer vision spatial gradient pipeline:
-1. **Canonical Scaling:** The detected face is cropped and resized to a standard $100 \times 100$ pixel square.
-2. **Illumination Normalization (CLAHE):** Contrast-Limited Adaptive Histogram Equalization eliminates localized shadows and exposure biases.
-3. **Spatial Grid Partitioning:** The face is divided into a $4 \times 4$ spatial grid (16 cells of $25 \times 25$ pixels each). Each cell corresponds to specific anatomical zones (forehead, eye sockets, nose, cheeks, mouth).
-4. **Directional Gradient Filters (Sobel):** Sobel filters compute $G_x$ and $G_y$, from which gradient magnitude $M$ and orientation $\theta$ are derived.
-5. **Orientation Bins:** An 8-bin histogram (covering $0^\circ$ to $360^\circ$ in $45^\circ$ increments) is accumulated per cell:
-   $$16 \text{ cells} \times 8 \text{ orientation bins} = 128 \text{ scalar features}$$
-6. **$L_2$ Hypersphere Normalization:** The 128 values are divided by their Euclidean norm, producing a unit-length vector on the 128-D hypersphere:
-   $$\|\mathbf{e}\|_2 = 1.0$$
+**Q7. What are the key parameters of `detectMultiScale`?**  
+- `scaleFactor` (1.1): Image is downscaled by 10% at each pyramid level.
+- `minNeighbors` (5): A detection rectangle must have at least 5 overlapping detections to be accepted; reduces false positives.
+- `minSize` (40, 40): Faces smaller than 40×40 pixels are ignored.
+- `flags` (`CASCADE_SCALE_IMAGE`): Standard multi-scale detection.
 
-### Q9: Why was `face_recognition`/`dlib` not used on Windows with Python 3.13?
-**Answer:**  
-As of Python 3.13 on Windows, PyPI does not provide pre-compiled binary wheels for `dlib`. Installing it from source requires Microsoft Visual C++ Build Tools, CMake, and encounters C++ ABI header changes. The project prompt explicitly instructed not to destabilize or reconfigure the Python environment. By leveraging native OpenCV image processing and mathematical feature extraction, the system achieves complete compatibility, zero dependency bottlenecks, and sub-millisecond execution speeds.
+**Q8. What is the difference between `scaleFactor=1.1` and `scaleFactor=1.3`?**  
+Smaller values (1.1) produce finer detection pyramids, detecting more faces including small ones, but are slower. Larger values (1.3) are faster but may miss small or distant faces. We use 1.1 for thoroughness in real-time conditions.
+
+**Q9. Why do you apply `equalizeHist` before `detectMultiScale`?**  
+The Haar Cascade was trained on normalised images. Applying equalisation brings the input closer to the training distribution, improving recall (fewer missed faces) under non-ideal lighting.
+
+**Q10. What is the bounding box returned by `detectMultiScale`?**  
+Each element is a tuple `(x, y, w, h)` where `(x, y)` is the top-left corner of the face rectangle, `w` is its width, and `h` its height — all in pixels.
 
 ---
 
-## Category 4: Distance Metrics & Matching Thresholds
+## Section C – Face Encoding
 
-### Q10: How do you mathematically determine if two faces match?
-**Answer:**  
-We calculate the **Euclidean Distance** ($L_2$ norm) between the candidate vector $\mathbf{e}_c$ and each registered vector $\mathbf{e}_r$:
-$$d(\mathbf{e}_c, \mathbf{e}_r) = \|\mathbf{e}_c - \mathbf{e}_r\|_2 = \sqrt{\sum_{k=1}^{128} (e_{c,k} - e_{r,k})^2}$$
-The candidate is matched with the resident whose encoding yields the minimum distance:
-$$d^* = \min_i d(\mathbf{e}_c, \mathbf{e}_i)$$
+**Q11. What is a face encoding?**  
+A face encoding is a compact numerical vector that summarises the visual features of a face. Two images of the same person should have similar (close) encodings; images of different people should have dissimilar (distant) encodings.
 
-### Q11: What is the matching threshold and how does adjusting it affect security?
-**Answer:**  
-The matching threshold $\tau$ (default $0.50$) is the boundary distance separating authorized residents from unknown persons:
-* **If $d^* \le \tau$:** The person is identified as a resident $\rightarrow$ **`ENTRY ALLOWED`** (Green).
-* **If $d^* > \tau$:** The person is treated as unregistered $\rightarrow$ **`ENTRY REJECTED`** (Red).
-* **Adjusting Threshold:**
-  * **Lower Threshold (e.g. $\tau = 0.35$ - Stricter):** Minimizes False Positives (prevents impostors from entering), but may increase False Negatives if a resident has slight lighting or angle variations.
-  * **Higher Threshold (e.g. $\tau = 0.65$ - Permissive):** Minimizes False Negatives (convenient for residents), but increases the risk of False Positives (impostors being admitted).
+**Q12. Explain the 128-D encoding pipeline used in this project.**  
+1. Resize the face ROI to 100×100 pixels (canonical size).
+2. Apply CLAHE for illumination normalisation.
+3. Compute Sobel gradients in X and Y directions; convert to magnitude and angle.
+4. Divide the image into a 4×4 grid of 25×25-pixel cells.
+5. For each cell, accumulate gradient magnitudes into 8 orientation bins (0°–360° in 45° steps).
+6. L2-normalise each cell's 8-D histogram; concatenate all 16 cells → 128-D vector.
+7. Globally L2-normalise the 128-D vector to unit length.
 
-### Q12: How is the confidence percentage calculated?
-**Answer:**  
-Confidence is derived inversely from distance relative to the threshold:
-* If $d^* \le \tau$: $\text{Confidence} = 100\% - \left(\frac{d^*}{\tau}\right) \times 50\%$
-  * A perfect match ($d^* = 0.0$) yields $100\%$ confidence.
-  * A borderline match ($d^* = \tau$) yields $50\%$ confidence.
-* If $d^* > \tau$: Confidence decays toward $0\%$ as distance increases beyond the threshold.
+**Q13. Why is L2 normalisation applied?**  
+L2 normalisation maps all encoding vectors onto the unit hypersphere. This makes Euclidean distance equivalent to a cosine similarity measure, removing the effect of overall gradient magnitude (which varies with image brightness) and making comparisons scale-invariant.
 
----
+**Q14. What are Sobel gradients and why are they used?**  
+Sobel operators are 3×3 convolution kernels that compute image derivatives in the X and Y directions:
+- `Gx` detects vertical edges.
+- `Gy` detects horizontal edges.
+- Magnitude `M = √(Gx² + Gy²)` indicates edge strength.
+- Angle `θ = arctan(Gy/Gx)` indicates edge direction.
+Gradients capture the structural patterns of a face (eye edges, nose bridge, mouth line) that are distinctive per person.
 
-## Category 5: SQLite Database & Data Storage
-
-### Q13: Why choose SQLite over CSV or MySQL for this project?
-**Answer:**  
-1. **Zero-Configuration & Serverless:** SQLite is an embedded database engine compiled directly into Python (`import sqlite3`). It requires no separate server process, port binding, or user credentials.
-2. **ACID Compliance & Concurrency:** Unlike CSV files (which risk file corruption if multiple threads write or a crash occurs mid-write), SQLite guarantees atomic, consistent, isolated, and durable transactions.
-3. **Structured Indexing:** Primary keys (`resident_id TEXT PRIMARY KEY`) enforce unique IDs automatically in $O(1)$ or $O(\log N)$ time, preventing duplicate registrations.
-4. **Binary BLOB Support:** Efficiently stores high-dimensional vector representations.
-
-### Q14: How are 128-dimensional NumPy arrays stored and retrieved from SQLite?
-**Answer:**  
-* **Storage:** The 128 float32 array is converted to contiguous raw binary bytes using `tobytes()`, producing a compact 512-byte payload ($128 \text{ elements} \times 4 \text{ bytes}$). This payload is stored directly in an SQLite `BLOB` column.
-* **Retrieval:** The raw bytes are reconstructed with `np.frombuffer(blob, dtype=np.float32).copy()`, restoring the exact numerical vector with zero precision loss and without the JSON or pickle parsing overhead.
+**Q15. Why is the face ROI resized to 100×100 before encoding?**  
+Canonical sizing ensures all encoding vectors are computed on the same spatial scale, making distance comparisons meaningful. Without resizing, a small face would produce different histogram statistics than a large face of the same person.
 
 ---
 
-## Category 6: Performance Evaluation & Metrics
+## Section D – Face Matching and Recognition
 
-### Q15: Define True Positive, False Positive, True Negative, and False Negative in access control.
-**Answer:**  
-* **True Positive (TP):** A registered resident approaches the gate and the system correctly grants access (**`ENTRY ALLOWED`**).
-* **True Negative (TN):** An unregistered visitor approaches the gate and the system correctly denies access (**`ENTRY REJECTED`**).
-* **False Positive (FP - Type I Error):** An unregistered stranger approaches the gate, but the system incorrectly identifies them as a resident and grants access (**Security Breach**).
-* **False Negative (FN - Type II Error):** A genuine registered resident approaches the gate, but the system fails to recognize them and denies access (**Convenience Failure**).
+**Q16. How is Euclidean distance calculated between two encodings?**  
+$$d = \|\mathbf{e}_1 - \mathbf{e}_2\|_2 = \sqrt{\sum_{i=1}^{128}(e_{1i} - e_{2i})^2}$$
+In NumPy: `np.linalg.norm(e1 - e2)`.
 
-### Q16: In high-security access control, which is more critical: minimizing False Positives or False Negatives?
-**Answer:**  
-**Minimizing False Positives (FP) is vastly more critical.**  
-A False Positive represents a severe security breach: an unauthorized intruder or stranger is admitted into the gated society. Conversely, a False Negative is an operational inconvenience: a legitimate resident is temporarily asked to step closer, adjust lighting, or try again. Therefore, security systems favor a stricter (lower) matching threshold.
+**Q17. What threshold is used and how was it chosen?**  
+Threshold = **0.50**. The same photo of the same person gives a distance of ~0.06 (near zero, due to normalisation). Random unrelated encodings give distances of ~0.67. A value of 0.50 sits midway between these natural clusters, providing clear separation in controlled conditions.
 
-### Q17: Why is Accuracy alone insufficient to evaluate an access control system?
-**Answer:**  
-If a dataset contains 99 unauthorized visitors and 1 resident, a dumb system that rejects everyone would achieve **99% accuracy**, yet fail its core purpose by locking out the legitimate resident. **Precision**, **Recall**, and **F1-Score** provide a balanced, comprehensive assessment of both security and usability:
-$$\text{Precision} = \frac{TP}{TP + FP}, \quad \text{Recall} = \frac{TP}{TP + FN}, \quad F1 = 2 \times \frac{\text{Precision} \times \text{Recall}}{\text{Precision} + \text{Recall}}$$
+**Q18. What is ENTRY ALLOWED vs ENTRY REJECTED?**  
+- **ENTRY ALLOWED**: The best-matching resident has distance ≤ 0.50 from the detected face encoding. The resident is recognised and their name is displayed in green.
+- **ENTRY REJECTED**: No resident within the threshold distance was found. The face is classified as unknown and displayed in red.
 
-### Q18: What is the purpose of the Confusion Matrix?
-**Answer:**  
-A confusion matrix is an $N \times N$ cross-tabulation of actual versus predicted classifications. It enables evaluators to see at a glance whether errors are dominated by False Positives (security flaws) or False Negatives (sensor/threshold sensitivity issues).
+**Q19. What happens when multiple faces are detected simultaneously?**  
+Each face bounding box is processed independently through the encoding and matching pipeline. Each face gets its own gate decision — some may be ALLOWED (registered residents) and others REJECTED (unknown), all displayed simultaneously.
+
+**Q20. Why is the resident database loaded into memory instead of querying SQLite for every frame?**  
+Querying SQLite for every video frame (typically 25–30 frames per second) would create excessive I/O and latency. `SecurityRecognizer` loads all encodings once at startup and caches them in a Python list. Hot-reload (press `R`) re-queries the database without restarting. This keeps recognition latency under 50 ms per face.
 
 ---
 
-## Category 7: System Operations & Real-World Scenarios
+## Section E – SQLite Database
 
-### Q19: How does the system handle multiple faces in a single video frame?
-**Answer:**  
-OpenCV detects all face rectangles in the frame. Each face is cropped, encoded, and compared against the database individually. If any face in the frame is unregistered, the system highlights that individual with a red bounding box and sets the gate alert status to **`ENTRY REJECTED`**, preventing unauthorized individuals from tailgating authorized residents.
+**Q21. Why is SQLite used instead of MySQL or PostgreSQL?**  
+SQLite is embedded (no server process), zero-configuration, and part of Python's standard library (`import sqlite3`). For a single-machine security gate with up to a few hundred residents, SQLite is simpler, faster to set up, and sufficiently performant. MySQL/PostgreSQL add network complexity and are better suited for multi-user, distributed applications.
 
-### Q20: What happens when no face is visible in front of the camera?
-**Answer:**  
-The system detects that the face list is empty. Instead of executing unnecessary encoding comparisons, it updates the HUD banner to `[ GATE IDLE - AWAITING ENTRANT ]` and displays clean video frames without crashing or flickering.
+**Q22. How are face encodings stored in SQLite?**  
+The 128-D float32 numpy array is serialised to raw bytes using `.tobytes()` and stored as a BLOB (Binary Large Object). On retrieval, `numpy.frombuffer(blob, dtype=np.float32)` reconstructs the array exactly (lossless). This avoids JSON or CSV encoding overhead.
 
-### Q21: What improvements would you implement in a commercial production version?
-**Answer:**  
-1. **Liveness Detection (Anti-Spoofing):** Implement eye-blink detection, optical flow analysis, or texture checks to prevent spoofing with printed photographs or smartphone screens.
-2. **Deep Neural Network Embeddings:** Deploy lightweight deep learning models (e.g. MobileFaceNet or SFace ONNX) via OpenCV DNN.
-3. **Automated Access Logs:** Log timestamped snapshots and entry decisions into an `access_logs` table for security auditing.
-4. **Hardware Integration:** Connect a microcontroller (e.g. Arduino or Raspberry Pi via GPIO/Serial) to trigger a physical turnstile or electromagnetic door lock relay.
+**Q23. What is a parameterized SQL query and why is it used?**  
+A parameterized query uses `?` placeholders instead of string concatenation:
+```python
+cursor.execute("SELECT * FROM residents WHERE resident_id = ?", (rid,))
+```
+This prevents **SQL injection attacks** (malicious input cannot alter the query structure) and handles special characters automatically.
+
+**Q24. What is the residents table schema?**  
+```sql
+CREATE TABLE residents (
+    resident_id      TEXT PRIMARY KEY,
+    name             TEXT NOT NULL,
+    face_encoding    BLOB NOT NULL,
+    registration_date TEXT NOT NULL
+);
+```
+
+**Q25. How is duplicate detection handled?**  
+`check_duplicate_resident(resident_id)` queries `SELECT 1 FROM residents WHERE resident_id = ?`. If a row is returned, the ID already exists. `add_resident()` calls this check before every INSERT and returns `False` without inserting if a duplicate is found.
+
+---
+
+## Section F – Evaluation Metrics
+
+**Q26. Define True Positive, True Negative, False Positive and False Negative in this context.**  
+- **TP**: System correctly grants ENTRY ALLOWED to a registered resident.
+- **TN**: System correctly gives ENTRY REJECTED to an unregistered person.
+- **FP**: System incorrectly grants ENTRY ALLOWED to an unregistered person (security breach).
+- **FN**: System incorrectly gives ENTRY REJECTED to a registered resident (inconvenience).
+
+**Q27. What is Accuracy and when is it misleading?**  
+$$\text{Accuracy} = \frac{TP + TN}{TP + TN + FP + FN}$$
+Accuracy is misleading when classes are imbalanced — if 95% of people are unregistered, a system that always rejects everyone achieves 95% accuracy while being useless. Precision and Recall are more informative for imbalanced datasets.
+
+**Q28. What is Precision and what does a low Precision mean for a security gate?**  
+$$\text{Precision} = \frac{TP}{TP + FP}$$
+Low Precision means many false alarms — intruders being incorrectly admitted. This is a critical security failure (false acceptance).
+
+**Q29. What is Recall and what does low Recall mean for residents?**  
+$$\text{Recall} = \frac{TP}{TP + FN}$$
+Low Recall means registered residents are frequently rejected — causing frustration and defeating the purpose of the system (false rejection).
+
+**Q30. What is the F1-score and when is it preferred?**  
+$$F_1 = 2 \cdot \frac{\text{Precision} \times \text{Recall}}{\text{Precision} + \text{Recall}}$$
+F1-score is the harmonic mean of Precision and Recall. It is preferred when there is a trade-off between the two. A high F1 means the system is both precise (few intruders admitted) and sensitive (few residents rejected).
+
+**Q31. Explain the confusion matrix for this project.**  
+```
+              Predicted Rejected  Predicted Allowed
+True Intruder       TN (88)           FP (0)
+True Resident       FN (0)            TP (88)
+```
+All 88 genuine test samples (registered residents under 4 augmentations) were correctly allowed, and all 88 synthetic intruder samples were correctly rejected.
+
+**Q32. Why are the evaluation results 100% and is this realistic?**  
+The 100% result occurs because:
+1. Genuine test samples are augmented variants of the same registered photos — the encoding pipeline is invariant to small augmentations.
+2. Synthetic intruder encodings (random vectors) are very far (distance ~0.67) from any registered encoding — trivially rejected.
+In real deployment, with actual photographs of different people, results will be lower, particularly for large angle changes or look-alike individuals.
+
+---
+
+## Section G – System Design
+
+**Q33. How does the SecurityRecognizer cache work?**  
+At `__init__`, it calls `get_all_residents()` which queries SQLite and deserialises all BLOB encodings. The list is stored in `self._residents`. Recognition loops over this in-memory list. The `reload_residents()` method re-queries the database — called when `R` is pressed in the live gate.
+
+**Q34. What is the GATE IDLE state?**  
+When no face is detected in the current frame, the system displays "GATE IDLE – AWAITING ENTRANT" in yellow, overlaid centrally on the video frame. No gate decision is made.
+
+**Q35. How does threshold adjustment work in the live gate?**  
+Pressing `+` increases `recognizer.threshold` by 0.05 (more lenient — more faces admitted). Pressing `-` decreases it by 0.05 (stricter — fewer faces admitted). The range is clamped to [0.10, 1.00]. The new threshold is applied immediately to subsequent frames without restarting.
+
+---
+
+*All answers reflect the actual implementation in this project.*
