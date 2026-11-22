@@ -8,6 +8,9 @@
 
 ## 1. Introduction
 
+> **Academic Prototype & Privacy Disclaimer:**  
+> This project is strictly an educational prototype developed for academic demonstration purposes in a college Computer Vision curriculum. It is not engineered or certified for commercial, industrial, or life-safety residential physical security. All reference face imagery included in `dataset/residents/` is synthetically derived from public-domain sample data (Grace Hopper reference portrait). In any live trial, explicit consent must be obtained prior to registering individual biometric identifiers.
+
 The Smart Society Security System is a real-time face-recognition access-control system developed as a college Computer Vision project. It addresses the problem of manual visitor verification in gated residential communities by automating entry decisions using laptop webcam video and stored resident face encodings.
 
 The system grants **ENTRY ALLOWED** (displayed in green) to registered residents and **ENTRY REJECTED** (displayed in red) to unrecognised persons, with the resident name displayed when recognised.

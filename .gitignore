@@ -15,6 +15,19 @@ env/
 
 # SQLite databases & runtime data
 *.db-journal
+*.db-wal
+*.db-shm
+
+# Private or local datasets & captures
+dataset/private/
+dataset/user_faces/
+dataset/unknown/*
+!dataset/unknown/.gitkeep
+
+# Temporary & backup files
+*.tmp
+*.bak
+*.swp
 
 # Output test artifacts / logs
 *.log

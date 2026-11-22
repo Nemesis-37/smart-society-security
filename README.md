@@ -22,6 +22,9 @@
 
 ## 1. Project Overview
 
+> **Academic Prototype & Privacy Notice:**  
+> This system is an educational prototype developed for a college Computer Vision coursework demonstration. It is **not** intended for mission-critical, enterprise, or production security infrastructure. All pre-seeded resident photos in `dataset/residents/` are synthetically generated from public-domain sample reference imagery (Grace Hopper, Matplotlib sample dataset) and do not contain private biometric data of actual residents. Always obtain explicit informed consent before capturing and registering live personal photographs.
+
 The **Smart Society Security System** is a real-time face-recognition access-control application that:
 
 - Registers residents with their photographs via webcam capture or file upload.
