@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Default to FastAPI backend port 8000
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+// Dedicated port 8088 for Smart Society Security backend
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8088/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -29,18 +29,22 @@ export const residentsApi = {
 };
 
 export const gateApi = {
+  start: () => api.post('/gate/start'),
+  stop: () => api.post('/gate/stop'),
   getStatus: () => api.get('/gate/status'),
+  getStreamUrl: () => `${API_BASE_URL}/gate/stream`,
   updateThreshold: (threshold) => api.post('/gate/threshold', { threshold }),
   reloadDatabase: () => api.post('/gate/reload'),
+};
+
+export const logsApi = {
+  getLogs: (params) => api.get('/logs', { params }),
+  getLogById: (id) => api.get(`/logs/${id}`),
 };
 
 export const evaluationApi = {
   getSummary: () => api.get('/evaluation/summary'),
   getPlotUrl: (name) => `${API_BASE_URL}/evaluation/plot/${name}`,
-};
-
-export const logsApi = {
-  getLogs: () => api.get('/logs'),
 };
 
 export default api;
