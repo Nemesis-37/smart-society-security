@@ -47,20 +47,20 @@ export default function Evaluation() {
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-navy-800">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-graphite-800">
         <div>
-          <h2 className="text-xl md:text-2xl font-extrabold text-white tracking-tight flex items-center space-x-2">
-            <BarChart3 className="w-6 h-6 text-emerald-400" />
-            <span>Model Performance & Evaluation</span>
+          <h2 className="text-xl md:text-2xl font-extrabold text-white tracking-tight flex items-center space-x-2 font-mono">
+            <BarChart3 className="w-6 h-6 text-crimson-500" />
+            <span>MODEL EVALUATION & BENCHMARKS</span>
           </h2>
-          <p className="text-xs md:text-sm text-slate-400 mt-1">
-            Empirical benchmark metrics computed from 176 real algorithm test iterations (Phase 7)
+          <p className="text-xs md:text-sm text-slate-400 mt-1 font-mono">
+            Empirical benchmark metrics computed from 176 algorithm test iterations (Phase 7)
           </p>
         </div>
 
         <button
           onClick={fetchEvaluation}
-          className="p-2.5 rounded-xl bg-navy-900 hover:bg-navy-800 border border-navy-700 text-slate-300 transition-colors self-start"
+          className="p-2.5 rounded-xl bg-graphite-900 hover:bg-graphite-800 border border-graphite-700 text-slate-300 transition-colors self-start"
           title="Refresh metrics"
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
@@ -69,11 +69,11 @@ export default function Evaluation() {
 
       {error && <Alert type="warning" message={error} />}
 
-      {/* Academic Prototype Notice */}
-      <div className="p-4 rounded-xl bg-blue-950/40 border border-blue-800/60 text-xs text-blue-200 flex items-start space-x-3">
-        <FileCheck2 className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
-        <div className="leading-relaxed">
-          <strong className="text-white">Academic Integrity & Evaluation Disclosure:</strong> The metrics below were calculated by <code>src/evaluate.py</code> using 88 genuine samples (22 registered residents $\times$ 4 augmentation conditions: standard warp, low-light $\alpha=0.75$, 8° rotation, and $5\times5$ blur) plus 88 synthetic random intruder vectors. As detailed in the project report, 100% scores reflect a controlled benchmark; real-world accuracy with novel unconstrained human intruders will naturally vary.
+      {/* Academic Prototype Disclosure */}
+      <div className="p-4 rounded-xl bg-status-warning/10 border border-status-warning/30 text-xs text-amber-200 flex items-start space-x-3">
+        <FileCheck2 className="w-5 h-5 text-status-warning shrink-0 mt-0.5" />
+        <div className="leading-relaxed font-sans">
+          <strong className="text-white font-mono uppercase">Academic Integrity & Evaluation Disclosure:</strong> The metrics below were calculated by <code>src/evaluate.py</code> using 88 genuine samples (22 registered residents × 4 augmentation conditions: standard warp, low-light $\alpha=0.75$, 8° rotation, and 5×5 blur) plus 88 synthetic random intruder vectors. As detailed in the project report, 100% scores reflect a controlled benchmark; real-world accuracy with novel unconstrained human intruders will naturally vary.
         </div>
       </div>
 
@@ -84,66 +84,66 @@ export default function Evaluation() {
           value={summary ? `${summary.accuracy.toFixed(1)}%` : '100.0%'}
           subtitle="Overall Classification"
           icon={Award}
-          color="emerald"
+          color="allowed"
         />
         <StatCard
           title="Precision"
           value={summary ? `${summary.precision.toFixed(1)}%` : '100.0%'}
           subtitle="Zero False Accepts (FP=0)"
           icon={CheckCircle2}
-          color="blue"
+          color="crimson"
         />
         <StatCard
           title="Recall"
           value={summary ? `${summary.recall.toFixed(1)}%` : '100.0%'}
           subtitle="Zero False Rejects (FN=0)"
           icon={Layers}
-          color="cyan"
+          color="amber"
         />
         <StatCard
           title="F1-Score"
           value={summary ? `${summary.f1_score.toFixed(1)}%` : '100.0%'}
           subtitle="Harmonic Mean"
           icon={BarChart3}
-          color="emerald"
+          color="allowed"
         />
       </div>
 
       {/* Confusion Matrix Numbers */}
-      <div className="p-6 rounded-2xl bg-navy-900/80 border border-navy-800 shadow-xl">
-        <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">
+      <div className="p-6 rounded-2xl bg-graphite-900 border border-graphite-800 shadow-xl">
+        <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono mb-4">
           Binary Classification Breakdown (Threshold: {summary?.threshold ?? 0.50})
         </h3>
         
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="p-4 rounded-xl bg-navy-950/80 border border-emerald-500/30 text-center">
-            <span className="text-xs text-slate-400 font-semibold uppercase">True Positive (TP)</span>
-            <p className="text-2xl font-bold font-mono text-emerald-400 mt-1">{summary?.tp ?? 88}</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">Residents Admitted</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 font-mono">
+          <div className="p-4 rounded-xl bg-graphite-950 border border-status-allowed/40 text-center">
+            <span className="text-[11px] text-slate-400 font-bold uppercase">True Positive (TP)</span>
+            <p className="text-2xl font-bold text-status-allowed mt-1">{summary?.tp ?? 88}</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">Residents Admitted</p>
           </div>
-          <div className="p-4 rounded-xl bg-navy-950/80 border border-blue-500/30 text-center">
-            <span className="text-xs text-slate-400 font-semibold uppercase">True Negative (TN)</span>
-            <p className="text-2xl font-bold font-mono text-blue-400 mt-1">{summary?.tn ?? 88}</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">Intruders Blocked</p>
+          <div className="p-4 rounded-xl bg-graphite-950 border border-graphite-700 text-center">
+            <span className="text-[11px] text-slate-400 font-bold uppercase">True Negative (TN)</span>
+            <p className="text-2xl font-bold text-white mt-1">{summary?.tn ?? 88}</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">Intruders Blocked</p>
           </div>
-          <div className="p-4 rounded-xl bg-navy-950/80 border border-rose-500/20 text-center">
-            <span className="text-xs text-slate-400 font-semibold uppercase">False Positive (FP)</span>
-            <p className="text-2xl font-bold font-mono text-rose-400 mt-1">{summary?.fp ?? 0}</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">False Accepts</p>
+          <div className="p-4 rounded-xl bg-graphite-950 border border-status-rejected/40 text-center">
+            <span className="text-[11px] text-slate-400 font-bold uppercase">False Positive (FP)</span>
+            <p className="text-2xl font-bold text-status-rejected mt-1">{summary?.fp ?? 0}</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">False Accepts</p>
           </div>
-          <div className="p-4 rounded-xl bg-navy-950/80 border border-amber-500/20 text-center">
-            <span className="text-xs text-slate-400 font-semibold uppercase">False Negative (FN)</span>
-            <p className="text-2xl font-bold font-mono text-amber-400 mt-1">{summary?.fn ?? 0}</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">False Rejects</p>
+          <div className="p-4 rounded-xl bg-graphite-950 border border-status-warning/40 text-center">
+            <span className="text-[11px] text-slate-400 font-bold uppercase">False Negative (FN)</span>
+            <p className="text-2xl font-bold text-status-warning mt-1">{summary?.fn ?? 0}</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">False Rejects</p>
           </div>
         </div>
       </div>
 
       {/* Generated Graphical Visualizations */}
-      <div className="p-6 rounded-2xl bg-navy-900/80 border border-navy-800 shadow-xl space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-navy-800">
-          <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-            <ImageIcon className="w-4 h-4 text-cyan-400" />
+      <div className="p-6 rounded-2xl bg-graphite-900 border border-graphite-800 shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-graphite-800">
+          <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono flex items-center space-x-2">
+            <ImageIcon className="w-4 h-4 text-crimson-500" />
             <span>Matplotlib Benchmark Graphs</span>
           </h3>
           
@@ -153,10 +153,10 @@ export default function Evaluation() {
               <button
                 key={p.id}
                 onClick={() => setActiveTab(p.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all ${
                   activeTab === p.id 
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' 
-                    : 'bg-navy-950 text-slate-400 hover:text-white border border-navy-800'
+                    ? 'bg-crimson-600 text-white shadow-md shadow-crimson-600/30 border border-crimson-500/50' 
+                    : 'bg-graphite-950 text-slate-400 hover:text-white border border-graphite-800'
                 }`}
               >
                 {p.name}
@@ -166,7 +166,7 @@ export default function Evaluation() {
         </div>
 
         {/* Display Active Chart */}
-        <div className="rounded-xl bg-navy-950 p-4 border border-navy-800/80 flex items-center justify-center min-h-[380px]">
+        <div className="rounded-xl bg-graphite-950 p-4 border border-graphite-800 flex items-center justify-center min-h-[380px]">
           <img
             src={evaluationApi.getPlotUrl(activeTab)}
             alt={activeTab}

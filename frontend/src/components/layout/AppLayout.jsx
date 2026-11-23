@@ -7,21 +7,21 @@ export default function AppLayout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-navy-950 text-slate-100 flex">
+    <div className="min-h-screen bg-graphite-950 text-slate-100 flex selection:bg-crimson-600 selection:text-white">
       {/* Sidebar for Desktop */}
       <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
 
       {/* Mobile Drawer Overlay */}
       {mobileOpen && (
         <div 
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm md:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       {/* Content Area */}
       <div 
-        className={`flex-1 flex flex-col transition-all duration-300 ${
+        className={`flex-1 flex flex-col transition-all duration-300 min-w-0 ${
           collapsed ? 'md:ml-20' : 'md:ml-64'
         }`}
       >

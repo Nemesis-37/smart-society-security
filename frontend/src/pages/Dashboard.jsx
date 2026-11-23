@@ -11,7 +11,10 @@ import {
   Cpu, 
   CheckCircle2, 
   Activity,
-  BarChart3
+  BarChart3,
+  Terminal,
+  Radio,
+  Sliders
 } from 'lucide-react';
 import StatCard from '../components/common/StatCard';
 import Badge from '../components/common/Badge';
@@ -48,7 +51,7 @@ export default function Dashboard() {
       setRecentResidents(residentsRes.data.slice(-4).reverse());
       setError(null);
     } catch (err) {
-      setError('Unable to connect to FastAPI backend. Ensure uvicorn server is running on port 8000.');
+      setError('Unable to connect to FastAPI backend. Ensure server is running on port 8088.');
     } finally {
       setLoading(false);
     }
@@ -56,37 +59,42 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 animate-fadeIn">
-      {/* Top Banner / Hero */}
-      <div className="relative rounded-3xl bg-gradient-to-r from-navy-900 via-navy-800 to-blue-950/70 border border-navy-700/60 p-6 md:p-8 overflow-hidden shadow-2xl">
+      {/* Tactical Surveillance Operations Banner */}
+      <div className="relative rounded-2xl bg-graphite-900 border border-graphite-800 p-6 md:p-8 overflow-hidden shadow-2xl">
         <div className="relative z-10 max-w-2xl">
-          <Badge variant="cyan" size="sm">Real-Time Access Control</Badge>
-          <h2 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight mt-3">
-            Smart Society Security Command Hub
+          <div className="flex items-center space-x-2">
+            <Badge variant="crimson" size="xs">TACTICAL ACCESS NODE</Badge>
+            <span className="text-[11px] font-mono text-slate-400">STATUS: ARMED</span>
+          </div>
+          <h2 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight mt-3 font-mono">
+            SENTINEL SURVEILLANCE COMMAND
           </h2>
-          <p className="text-slate-300 text-sm mt-2 leading-relaxed">
-            High-speed facial verification powered by pure OpenCV spatial gradient HOG encodings and SQLite database backend.
+          <p className="text-slate-300 text-xs md:text-sm mt-2 leading-relaxed font-sans">
+            Autonomous optical security portal powered by 128-dimensional CLAHE + Sobel HOG facial encodings, real-time Euclidean distance verification, and SQLite persistent audit storage.
           </p>
 
           <div className="flex flex-wrap items-center gap-3 mt-6">
             <Link
               to="/gate"
-              className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold shadow-lg shadow-blue-600/30 transition-all hover:scale-105 active:scale-95"
+              className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-crimson-600 hover:bg-crimson-500 text-white text-xs font-bold uppercase tracking-wider shadow-lg shadow-crimson-600/30 transition-all hover:scale-105 active:scale-95 border border-crimson-500/40"
             >
-              <Video size={16} />
-              <span>Launch Live Gate</span>
+              <Video size={15} />
+              <span>Launch Live Gate Monitor</span>
             </Link>
             <Link
               to="/residents"
-              className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-navy-800 hover:bg-navy-700 text-slate-200 border border-navy-600/60 text-sm font-semibold transition-all hover:scale-105 active:scale-95"
+              className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-graphite-800 hover:bg-graphite-750 text-slate-200 border border-graphite-700 text-xs font-bold uppercase tracking-wider transition-all hover:scale-105 active:scale-95"
             >
-              <UserPlus size={16} />
-              <span>Register Resident</span>
+              <UserPlus size={15} />
+              <span>Enroll Resident</span>
             </Link>
           </div>
         </div>
 
-        {/* Decorative Grid Graphic */}
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-15 pointer-events-none hidden md:block bg-[radial-gradient(#2563eb_1px,transparent_1px)] [background-size:16px_16px]" />
+        {/* Tactical Crosshair / Background Accent */}
+        <div className="absolute right-6 top-6 bottom-6 w-1/3 opacity-10 pointer-events-none hidden lg:flex items-center justify-end">
+          <ShieldAlert className="w-48 h-48 text-crimson-500" />
+        </div>
       </div>
 
       {error && (
@@ -98,98 +106,100 @@ export default function Dashboard() {
       )}
 
       {/* Primary Telemetry Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
         <StatCard
-          title="Active Residents"
+          title="Enrolled Residents"
           value={loading ? '...' : stats.total_residents}
-          subtitle="Registered in SQLite database"
+          subtitle="Active biometric profiles in SQLite"
           icon={Users}
-          color="blue"
-          trend="Validated"
+          color="crimson"
+          trend="VALIDATED"
         />
         <StatCard
-          title="Database State"
+          title="Database Core"
           value={loading ? '...' : stats.database_status}
           subtitle="society_security.db"
           icon={Database}
-          color="emerald"
+          color="allowed"
+          trend="ONLINE"
         />
         <StatCard
-          title="Matching Threshold"
+          title="Euclidean Cutoff"
           value={loading ? '...' : `${stats.threshold.toFixed(2)}`}
-          subtitle="Euclidean separation cutoff"
-          icon={Cpu}
-          color="cyan"
+          subtitle="Spatial separation threshold"
+          icon={Sliders}
+          color="amber"
+          trend="ACTIVE"
         />
         <StatCard
-          title="Model Accuracy"
+          title="Benchmark Accuracy"
           value={stats.evaluation_accuracy !== null ? `${stats.evaluation_accuracy}%` : '100%'}
-          subtitle="Phase 7 Benchmark (Controlled)"
+          subtitle="Controlled Phase 7 Dataset"
           icon={Award}
-          color="emerald"
-          trend="Real Metrics"
+          color="allowed"
+          trend="EMPIRICAL"
         />
       </div>
 
-      {/* Main Split Sections */}
+      {/* Main Split Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Quick Actions & System Health (1 col) */}
+        {/* Left: Engine Architecture Specifications */}
         <div className="space-y-6">
-          <div className="p-6 rounded-2xl bg-navy-900/80 border border-navy-700/60 shadow-xl">
-            <h3 className="text-base font-bold text-white tracking-tight flex items-center space-x-2">
-              <Activity className="w-5 h-5 text-blue-400" />
-              <span>Core System Engine</span>
+          <div className="p-6 rounded-2xl bg-graphite-900 border border-graphite-800 shadow-xl">
+            <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono flex items-center space-x-2 pb-3 border-b border-graphite-800">
+              <Activity className="w-4 h-4 text-crimson-500" />
+              <span>Optical Engine Telemetry</span>
             </h3>
             
             <div className="mt-4 space-y-3">
-              <div className="flex items-center justify-between p-3 rounded-xl bg-navy-950/60 border border-navy-800 text-xs">
-                <span className="text-slate-400">Detection Model</span>
-                <span className="font-semibold text-slate-200 font-mono">Haar Frontal Cascade</span>
+              <div className="flex items-center justify-between p-3 rounded-xl bg-graphite-950 border border-graphite-800/80 text-xs">
+                <span className="text-slate-400 font-mono text-[11px]">DETECTION CASCADE</span>
+                <span className="font-bold text-slate-200 font-mono text-[11px]">Haar Frontal Default</span>
               </div>
-              <div className="flex items-center justify-between p-3 rounded-xl bg-navy-950/60 border border-navy-800 text-xs">
-                <span className="text-slate-400">Encoding Algorithm</span>
-                <span className="font-semibold text-slate-200 font-mono">128-D CLAHE + Sobel HOG</span>
+              <div className="flex items-center justify-between p-3 rounded-xl bg-graphite-950 border border-graphite-800/80 text-xs">
+                <span className="text-slate-400 font-mono text-[11px]">ROI CANONICAL</span>
+                <span className="font-bold text-slate-200 font-mono text-[11px]">100 × 100 Grayscale</span>
               </div>
-              <div className="flex items-center justify-between p-3 rounded-xl bg-navy-950/60 border border-navy-800 text-xs">
-                <span className="text-slate-400">Decision Metric</span>
-                <span className="font-semibold text-emerald-400 font-mono">Euclidean ≤ {stats.threshold}</span>
+              <div className="flex items-center justify-between p-3 rounded-xl bg-graphite-950 border border-graphite-800/80 text-xs">
+                <span className="text-slate-400 font-mono text-[11px]">ENCODING VECTOR</span>
+                <span className="font-bold text-slate-200 font-mono text-[11px]">128-D CLAHE + Sobel HOG</span>
               </div>
-              <div className="flex items-center justify-between p-3 rounded-xl bg-navy-950/60 border border-navy-800 text-xs">
-                <span className="text-slate-400">Runtime Python</span>
-                <span className="font-semibold text-slate-200 font-mono">Python 3.13.7 (64-bit)</span>
+              <div className="flex items-center justify-between p-3 rounded-xl bg-graphite-950 border border-graphite-800/80 text-xs">
+                <span className="text-slate-400 font-mono text-[11px]">DECISION FORMULA</span>
+                <span className="font-bold text-status-allowed font-mono text-[11px]">Euclidean ≤ {stats.threshold}</span>
               </div>
             </div>
 
-            <div className="mt-5 pt-4 border-t border-navy-800">
+            <div className="mt-5 pt-4 border-t border-graphite-800">
               <Link 
                 to="/evaluation" 
-                className="w-full flex items-center justify-center space-x-2 py-2.5 rounded-xl bg-navy-800 hover:bg-navy-700 text-xs font-semibold text-slate-300 transition-colors"
+                className="w-full flex items-center justify-center space-x-2 py-2.5 rounded-xl bg-graphite-800 hover:bg-graphite-750 text-xs font-bold font-mono uppercase tracking-wider text-slate-300 transition-colors border border-graphite-700"
               >
-                <BarChart3 size={15} />
-                <span>View Full Evaluation Report</span>
+                <BarChart3 size={14} />
+                <span>Examine Evaluation Report</span>
               </Link>
             </div>
           </div>
         </div>
 
-        {/* Right: Recently Registered Residents (2 cols) */}
-        <div className="lg:col-span-2 p-6 rounded-2xl bg-navy-900/80 border border-navy-700/60 shadow-xl flex flex-col justify-between">
+        {/* Right: Recently Registered Residents */}
+        <div className="lg:col-span-2 p-6 rounded-2xl bg-graphite-900 border border-graphite-800 shadow-xl flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between pb-4 border-b border-navy-800">
+            <div className="flex items-center justify-between pb-4 border-b border-graphite-800">
               <div>
-                <h3 className="text-base font-bold text-white tracking-tight flex items-center space-x-2">
-                  <Users className="w-5 h-5 text-cyan-400" />
-                  <span>Recently Registered Residents</span>
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono flex items-center space-x-2">
+                  <Users className="w-4 h-4 text-crimson-500" />
+                  <span>Recently Enrolled Personnel</span>
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Live records verified in SQLite database
+                  Live resident profiles stored in SQLite
                 </p>
               </div>
               <Link 
                 to="/residents" 
-                className="text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center space-x-1"
+                className="text-xs font-bold font-mono uppercase tracking-wider text-crimson-400 hover:text-crimson-300 flex items-center space-x-1"
               >
-                <span>View All ({stats.total_residents})</span>
+                <span>Full Roster ({stats.total_residents})</span>
                 <ArrowRight size={14} />
               </Link>
             </div>
@@ -198,12 +208,12 @@ export default function Dashboard() {
               {recentResidents.map((resident) => (
                 <div 
                   key={resident.resident_id} 
-                  className="p-3.5 rounded-xl bg-navy-950/70 border border-navy-800/80 flex items-center space-x-3 hover:border-navy-600 transition-all"
+                  className="p-3.5 rounded-xl bg-graphite-950 border border-graphite-800 flex items-center space-x-3 hover:border-graphite-700 transition-all"
                 >
                   <img
                     src={residentsApi.getPhotoUrl(resident.resident_id)}
                     alt={resident.name}
-                    className="w-12 h-12 rounded-xl object-cover bg-navy-800 border border-navy-700 shrink-0"
+                    className="w-12 h-12 rounded-xl object-cover bg-graphite-850 border border-graphite-700 shrink-0"
                     onError={(e) => {
                       e.target.src = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2'><circle cx='12' cy='8' r='4'/><path d='M20 21a8 8 0 1 0-16 0'/></svg>";
                     }}
@@ -212,11 +222,11 @@ export default function Dashboard() {
                     <p className="text-sm font-bold text-white truncate">
                       {resident.name}
                     </p>
-                    <p className="text-xs font-mono text-cyan-400 font-medium">
+                    <p className="text-xs font-mono text-crimson-400 font-bold">
                       {resident.resident_id}
                     </p>
-                    <p className="text-[10px] text-slate-500 mt-0.5 truncate">
-                      Reg: {resident.registration_date}
+                    <p className="text-[10px] text-slate-400 font-mono mt-0.5 truncate">
+                      ENROLLED: {resident.registration_date}
                     </p>
                   </div>
                 </div>
@@ -224,10 +234,10 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-navy-800/70 flex items-center justify-between text-xs text-slate-400">
-            <span>Academic Prototype • Real OpenCV Encodings</span>
-            <Link to="/residents" className="text-cyan-400 hover:underline">
-              Manage Residents →
+          <div className="mt-6 pt-4 border-t border-graphite-800 flex items-center justify-between text-xs text-slate-400 font-mono">
+            <span>TACTICAL ROSTER • PERSISTENT ENCODINGS</span>
+            <Link to="/residents" className="text-crimson-400 hover:underline">
+              Manage Resident Roster →
             </Link>
           </div>
         </div>

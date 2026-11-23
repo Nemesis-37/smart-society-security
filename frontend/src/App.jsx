@@ -10,7 +10,7 @@ import Settings from './pages/Settings';
 
 export default function App() {
   return (
-    <Router>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AppLayout>
         <Routes>
           <Route path="/" element={<Dashboard />} />

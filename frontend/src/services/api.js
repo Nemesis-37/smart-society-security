@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Dedicated port 8088 for Smart Society Security backend
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8088/api';
+// Uses relative /api via Vite proxy, with fallback to direct backend URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

@@ -6,44 +6,44 @@ export default function StatCard({
   subtitle, 
   icon: Icon, 
   trend,
-  color = 'blue' 
+  color = 'crimson' 
 }) {
   const colorStyles = {
-    blue: {
-      bg: 'bg-blue-600/10',
-      border: 'border-blue-500/20 hover:border-blue-500/40',
-      icon: 'text-blue-400',
-      glow: 'group-hover:shadow-blue-500/10'
+    crimson: {
+      bg: 'bg-crimson-600/10 border-crimson-600/30 text-crimson-500',
+      borderHover: 'hover:border-crimson-600/50',
+      badge: 'text-crimson-400 bg-crimson-600/10 border-crimson-600/30',
     },
-    emerald: {
-      bg: 'bg-emerald-600/10',
-      border: 'border-emerald-500/20 hover:border-emerald-500/40',
-      icon: 'text-emerald-400',
-      glow: 'group-hover:shadow-emerald-500/10'
+    allowed: {
+      bg: 'bg-status-allowed/10 border-status-allowed/30 text-status-allowed',
+      borderHover: 'hover:border-status-allowed/50',
+      badge: 'text-status-allowed bg-status-allowed/10 border-status-allowed/30',
     },
-    rose: {
-      bg: 'bg-rose-600/10',
-      border: 'border-rose-500/20 hover:border-rose-500/40',
-      icon: 'text-rose-400',
-      glow: 'group-hover:shadow-rose-500/10'
+    amber: {
+      bg: 'bg-status-warning/10 border-status-warning/30 text-status-warning',
+      borderHover: 'hover:border-status-warning/50',
+      badge: 'text-status-warning bg-status-warning/10 border-status-warning/30',
     },
-    cyan: {
-      bg: 'bg-cyan-600/10',
-      border: 'border-cyan-500/20 hover:border-cyan-500/40',
-      icon: 'text-cyan-400',
-      glow: 'group-hover:shadow-cyan-500/10'
+    neutral: {
+      bg: 'bg-graphite-800 border-graphite-700 text-slate-300',
+      borderHover: 'hover:border-graphite-600',
+      badge: 'text-slate-300 bg-graphite-800 border-graphite-700',
     },
-  }[color] || colorStyles.blue;
+  }[color] || {
+    bg: 'bg-crimson-600/10 border-crimson-600/30 text-crimson-500',
+    borderHover: 'hover:border-crimson-600/50',
+    badge: 'text-crimson-400 bg-crimson-600/10 border-crimson-600/30',
+  };
 
   return (
-    <div className={`p-5 rounded-2xl bg-navy-900/80 border ${colorStyles.border} shadow-lg transition-all duration-300 group hover:-translate-y-0.5 ${colorStyles.glow}`}>
+    <div className={`p-5 rounded-2xl bg-graphite-900 border border-graphite-800 transition-all duration-300 group hover:-translate-y-0.5 ${colorStyles.borderHover} shadow-lg shadow-black/40`}>
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-mono">
           {title}
         </span>
         {Icon && (
-          <div className={`p-2.5 rounded-xl ${colorStyles.bg} ${colorStyles.icon} transition-transform group-hover:scale-110`}>
-            <Icon size={20} />
+          <div className={`p-2.5 rounded-xl border ${colorStyles.bg} transition-transform group-hover:scale-110`}>
+            <Icon size={18} />
           </div>
         )}
       </div>
@@ -53,14 +53,14 @@ export default function StatCard({
           {value}
         </span>
         {trend && (
-          <span className="text-xs font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+          <span className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${colorStyles.badge}`}>
             {trend}
           </span>
         )}
       </div>
 
       {subtitle && (
-        <p className="mt-1 text-xs text-slate-400">
+        <p className="mt-1 text-xs text-slate-400 font-medium">
           {subtitle}
         </p>
       )}
